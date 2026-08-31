@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>App 4 — Subsurface Ocean Intelligence</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --void: #050611;
+      --bg-a: #0a0c1e;
+      --bg-b: #020208;
+      --sea: #5fa79c;
+      --sea-soft: rgba(95, 167, 156, 0.10);
+      --sea-line: rgba(95, 167, 156, 0.24);
+      --brass: #c79a5e;
+      --brass-soft: rgba(199, 154, 94, 0.12);
+      --glass: rgba(14, 19, 24, 0.52);
+      --glass-strong: rgba(9, 12, 16, 0.86);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-soft: rgba(255, 255, 255, 0.05);
+      --ink: #ece7dc;
+      --muted: #9a9c97;
+      --dim: #4a4d4c;
+      --ff-display: 'Fraunces', serif;
+      --ff-body: 'Inter', sans-serif;
+      --header-h: 64px;
+    }
+
+    html,
+    body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: var(--void);
+      color: var(--ink);
+      font-family: var(--ff-body);
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(1px 1px at 12% 22%, rgba(255, 255, 255, 0.5) 0%, transparent 60%),
+        radial-gradient(1px 1px at 28% 68%, rgba(255, 255, 255, 0.35) 0%, transparent 60%),
+        radial-gradient(1.5px 1.5px at 45% 12%, rgba(255, 255, 255, 0.45) 0%, transparent 60%),
+        radial-gradient(1px 1px at 85% 58%, rgba(255, 255, 255, 0.35) 0%, transparent 60%),
+        radial-gradient(ellipse 65% 50% at 75% 18%, rgba(95, 167, 156, 0.10) 0%, transparent 65%),
+        radial-gradient(ellipse 55% 45% at 12% 88%, rgba(199, 154, 94, 0.06) 0%, transparent 65%),
+        radial-gradient(ellipse 90% 75% at 50% 50%, var(--bg-a) 0%, var(--bg-b) 100%);
+    }
+
+    /* ═══════════ HEADER ═══════════ */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--header-h);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 26px;
+      background: rgba(8, 11, 14, 0.72);
+      border-bottom: 1px solid var(--border-soft);
+      backdrop-filter: blur(16px);
+    }
+
+    .h-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-mark {
+      font-family: var(--ff-display);
+      font-weight: 600;
+      font-size: 19px;
+      color: var(--ink);
+    }
+
+    .logo-mark em {
+      font-style: italic;
+      font-weight: 500;
+      color: var(--sea);
+    }
+
+    .logo-sep {
+      width: 1px;
+      height: 24px;
+      background: var(--border);
+      margin: 0 6px;
+    }
+
+    .logo-sub {
+      font-size: 11px;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .logo-sub b {
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .h-nav {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      font-size: 12.5px;
+    }
+
+    .h-nav a {
+      color: var(--muted);
+      text-decoration: none;
+      padding: 7px 12px;
+      border-radius: 7px;
+      transition: color .15s;
+    }
+
+    .h-nav a:hover {
+      color: var(--ink);
+    }
+
+    .h-nav .sep {
+      color: var(--dim);
+    }
+
+    .h-nav a.active {
+      color: var(--ink);
+    }
+
+    .h-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 13px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-soft);
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--sea);
+      animation: breathe 2.4s ease-in-out infinite;
+    }
+
+    @keyframes breathe {
+
+      0%,
+      100% {
+        opacity: 1
+      }
+
+      50% {
+        opacity: .35
+      }
+    }
+
+    /* ═══════════ DASHBOARD GRID ═══════════ */
+    #dashboard {
+      position: fixed;
+      top: var(--header-h);
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .col-left {
+      display: grid;
+      grid-template-rows: 1fr 1fr;
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .col-right {
+      display: grid;
+      min-height: 0;
+    }
+
+    .panel {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      background: var(--glass);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      backdrop-filter: blur(18px);
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--border-soft);
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      font-family: var(--ff-display);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .panel-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .panel-meta {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+      white-space: nowrap;
+      text-align: right;
+    }
+
+    .panel-meta .swatch {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .panel-body {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+    }
+
+    .plot {
+      width: 100%;
+      height: 100%;
+    }
+
+    .map {
+      width: 100%;
+      height: 100%;
+      background: var(--void);
+    }
+
+    .panel-loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(5, 6, 17, 0.55);
+      backdrop-filter: blur(2px);
+      z-index: 5;
+      transition: opacity .3s ease;
+    }
+
+    .load-ring {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid var(--border-soft);
+      border-top-color: var(--sea);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+
+    .plot-error {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* Leaflet dark-map cosmetic tweaks */
+    .leaflet-container {
+      background: var(--void);
+      font-family: var(--ff-body);
+    }
+
+    /* Invert + hue-rotate the tile pane to get a dark map from free OSM tiles */
+    .leaflet-tile-pane {
+      filter: invert(1) hue-rotate(190deg) brightness(0.6) contrast(1.1) saturate(0.3);
+    }
+
+    .leaflet-popup-content-wrapper {
+      background: var(--glass-strong);
+      color: var(--ink);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .leaflet-popup-tip {
+      background: var(--glass-strong);
+    }
+
+    .leaflet-control-zoom a {
+      background: var(--glass-strong) !important;
+      color: var(--ink) !important;
+      border-color: var(--border) !important;
+    }
+
+    .leaflet-control-attribution {
+      background: rgba(0,0,0,0.5) !important;
+      color: var(--dim) !important;
+      font-size: 9px !important;
+    }
+
+    .leaflet-control-attribution a {
+      color: var(--muted) !important;
+    }
+
+    @media (max-width:900px) {
+      #dashboard {
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr 1fr;
+        overflow-y: auto;
+      }
+
+      .col-left {
+        grid-template-rows: 1fr 1fr;
+        min-height: 640px;
+      }
+
+      .col-right {
+        min-height: 360px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="h-left">
+      <div class="logo-mark">Geo<em>Artemis</em></div>
+      <div class="logo-sep"></div>
+      <div class="logo-sub">Subsurface prediction dashboard<br><b>App 4</b></div>
+    </div>
+    <nav class="h-nav">
+      <a href="/app1/">App 1</a><span class="sep">|</span>
+      <a href="/app2/">App 2</a><span class="sep">|</span>
+      <a href="/app3/">App 3</a><span class="sep">|</span>
+      <a href="/app4/" class="active">App 4</a><span class="sep">|</span>
+      <a href="/app5/">App 5</a><span class="sep">|</span>
+      <a href="/app2/logout">Log out</a>
+    </nav>
+    <div class="h-right">
+      <div class="status-pill">
+        <div class="status-dot"></div><span>Model output live</span>
+      </div>
+    </div>
+  </header>
+
+  <div id="dashboard">
+    <div class="col-left">
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Bay of Bengal</div>
+            <div class="panel-sub">Predicted subsurface temperature — 3D cuboid</div>
+          </div>
+          <div class="panel-meta" id="bob-meta"><span class="swatch" style="background:var(--sea)"></span>—</div>
+        </div>
+        <div class="panel-body">
+          <div id="plot-bob" class="plot"></div>
+          <div class="panel-loading" id="bob-loading">
+            <div class="load-ring"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Indian Ocean</div>
+            <div class="panel-sub">Predicted subsurface temperature — 3D cuboid</div>
+          </div>
+          <div class="panel-meta" id="io-meta"><span class="swatch" style="background:var(--brass)"></span>—</div>
+        </div>
+        <div class="panel-body">
+          <div id="plot-io" class="plot"></div>
+          <div class="panel-loading" id="io-loading">
+            <div class="load-ring"></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <div class="col-right">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-title">Prediction coverage</div>
+            <div class="panel-sub">Region extents used by the subsurface model</div>
+          </div>
+          <div class="panel-meta" id="map-meta">—</div>
+        </div>
+        <div class="panel-body">
+          <div id="leaflet-map" class="map"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+  <script>
+    'use strict';
+
+    const API_BASE = '/app4/api';
+    const REGION_COLOR = { 'bay-of-bengal': '#5fa79c', 'indian-ocean': '#c79a5e' };
+
+    function showLoading(el, show) { el.style.display = show ? 'flex' : 'none'; }
+
+    async function fetchJSON(url) {
+      const res = await fetch(url);
+      if (!res.ok) {
+        const detail = await res.text().catch(() => '');
+        throw new Error(`${res.status} ${res.statusText} ${detail}`.trim());
+      }
+      return res.json();
+    }
+
+    function buildSurfaceTraces(payload) {
+      const { depths, lat, lon, data, vmin, vmax } = payload;
+      return depths.map((d, i) => {
+        const tempSlice = data[i]; // 2D [lat][lon], nulls where masked
+        const zPlane = tempSlice.map(row => row.map(v => (v === null ? null : -d)));
+        const trace = {
+          type: 'surface',
+          x: lon,
+          y: lat,
+          z: zPlane,
+          surfacecolor: tempSlice,
+          cmin: vmin,
+          cmax: vmax,
+          colorscale: 'RdBu',
+          reversescale: true,
+          opacity: 0.94,
+          showscale: i === 0,
+          name: `${Math.round(d)} m`,
+          lighting: { ambient: 0.85, diffuse: 0.55, roughness: 0.9 },
+          hovertemplate: `Depth ${Math.round(d)} m<br>Temp: %{surfacecolor:.2f} °C<extra></extra>`
+        };
+        if (i === 0) {
+          trace.colorbar = { title: '°C', thickness: 12, len: 0.65, outlinewidth: 0, tickfont: { color: '#9a9c97', size: 10 } };
+        }
+        return trace;
+      });
+    }
+
+    function buildLayout(depths) {
+      return {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        margin: { l: 0, r: 0, t: 8, b: 0 },
+        scene: {
+          xaxis: { title: 'Longitude', color: '#9a9c97', gridcolor: 'rgba(255,255,255,0.08)', zerolinecolor: 'rgba(255,255,255,0.08)' },
+          yaxis: { title: 'Latitude', color: '#9a9c97', gridcolor: 'rgba(255,255,255,0.08)', zerolinecolor: 'rgba(255,255,255,0.08)' },
+          zaxis: {
+            title: 'Depth (m)', color: '#9a9c97', gridcolor: 'rgba(255,255,255,0.08)',
+            tickvals: depths.map(d => -d),
+            ticktext: depths.map(d => String(Math.round(d)))
+          },
+          aspectmode: 'manual',
+          aspectratio: { x: 1, y: 1, z: 1.2 },
+          bgcolor: 'transparent'
+        },
+        font: { family: 'Inter, sans-serif', color: '#ece7dc', size: 11 }
+      };
+    }
+
+    async function renderPanel(region, plotId, loadingId, metaId) {
+      const loadingEl = document.getElementById(loadingId);
+      const metaEl = document.getElementById(metaId);
+      showLoading(loadingEl, true);
+      try {
+        const payload = await fetchJSON(`${API_BASE}/subsurface/${region}?step=3`);
+        const traces = buildSurfaceTraces(payload);
+        const layout = buildLayout(payload.depths);
+        Plotly.newPlot(plotId, traces, layout, { responsive: true, displaylogo: false });
+        metaEl.innerHTML = `<span class="swatch" style="background:${REGION_COLOR[region] || '#5fa79c'}"></span>${payload.lat.length}×${payload.lon.length} grid · ${payload.depths.length} levels`;
+
+        // Keep Plotly sized correctly if the panel is resized (e.g. window resize).
+        const ro = new ResizeObserver(() => Plotly.Plots.resize(document.getElementById(plotId)));
+        ro.observe(document.getElementById(plotId));
+      } catch (err) {
+        console.error(`Failed to load ${region}`, err);
+        document.getElementById(plotId).innerHTML =
+          `<div class="plot-error">Couldn't load prediction data for ${region.replace('-', ' ')}.<br>${err.message}</div>`;
+      } finally {
+        showLoading(loadingEl, false);
+      }
+    }
+
+    async function initMap() {
+      const map = L.map('leaflet-map', { zoomControl: true, attributionControl: false }).setView([10, 80], 3);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(map);
+
+      const mapMeta = document.getElementById('map-meta');
+      try {
+        const regions = await fetchJSON(`${API_BASE}/regions`);
+        const group = [];
+        Object.entries(regions).forEach(([key, r]) => {
+          const bounds = [[r.lat_min, r.lon_min], [r.lat_max, r.lon_max]];
+          const color = REGION_COLOR[key] || '#5fa79c';
+          const rect = L.rectangle(bounds, { color, weight: 1.5, fillOpacity: 0.12 })
+            .addTo(map)
+            .bindPopup(`<b>${r.label}</b><br>Prediction coverage region`);
+          group.push(rect);
+        });
+        if (group.length) {
+          map.fitBounds(L.featureGroup(group).getBounds().pad(0.4));
+        }
+        mapMeta.textContent = `${Object.keys(regions).length} regions highlighted`;
+      } catch (err) {
+        console.error('Failed to load region bounds', err);
+        mapMeta.textContent = 'Region data unavailable';
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderPanel('bay-of-bengal', 'plot-bob', 'bob-loading', 'bob-meta');
+      renderPanel('indian-ocean', 'plot-io', 'io-loading', 'io-meta');
+      initMap();
+    });
+  </script>
+</body>
+
+</html>
