@@ -1,20 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>App 5</title>
-  </head>
-  <body>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GeoArtemis — App 5</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --void: #050611;
+      --bg-a: #0a0c1e;
+      --bg-b: #020208;
+      --sea: #5fa79c;
+      --border-soft: rgba(255, 255, 255, 0.05);
+      --ink: #ece7dc;
+      --muted: #9a9c97;
+      --ff-display: 'Fraunces', serif;
+      --ff-body: 'Inter', sans-serif;
+      --header-h: 64px;
+    }
+    html, body {
+      width: 100vw; height: 100vh; overflow: hidden;
+      background: var(--void); color: var(--ink); font-family: var(--ff-body);
+    }
+    header {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--header-h); z-index: 1000;
+      display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
+      background: rgba(8, 11, 16, 0.82); border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
+    }
+    .h-left { display: flex; align-items: center; gap: 14px; }
+    .logo-mark { font-family: var(--ff-display); font-weight: 600; font-size: 18.5px; letter-spacing: -0.2px; color: var(--ink); display: flex; align-items: baseline; }
+    .logo-mark em { font-style: italic; font-weight: 500; color: var(--sea); }
+    .logo-sep { width: 1px; height: 22px; background: rgba(255, 255, 255, 0.1); margin: 0 4px; }
+    .logo-sub { font-size: 11px; color: var(--muted); line-height: 1.35; font-weight: 400; }
+    .logo-sub b { color: var(--ink); font-weight: 500; }
+    .h-nav {
+      display: flex; align-items: center; gap: 4px; background: rgba(255, 255, 255, 0.03);
+      padding: 4px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .h-nav a {
+      font-size: 12.5px; font-weight: 500; color: var(--muted); text-decoration: none;
+      padding: 6px 14px; border-radius: 7px; transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative; display: flex; align-items: center; justify-content: center;
+    }
+    .h-nav a:hover { color: var(--ink); background: rgba(255, 255, 255, 0.06); }
+    .h-nav a.active {
+      color: #ffffff; font-weight: 600; background: rgba(255, 255, 255, 0.09);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    .h-nav a.active::after {
+      content: ''; position: absolute; bottom: 0px; left: 10px; right: 10px; height: 2px;
+      background: var(--sea); border-radius: 2px;
+    }
+    .h-right { display: flex; align-items: center; gap: 14px; justify-content: flex-end; }
+    .nav-logout {
+      font-size: 12px; font-weight: 500; color: var(--muted); text-decoration: none;
+      padding: 5px 12px; border-radius: 7px; background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08); transition: all 200ms ease;
+    }
+    .nav-logout:hover { color: #ff9999; background: rgba(255, 80, 80, 0.1); border-color: rgba(255, 80, 80, 0.25); }
+    .main-content {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100vh; text-align: center; gap: 12px; padding: 20px;
+    }
+    h1 { font-family: var(--ff-display); font-size: 28px; font-weight: 500; color: var(--ink); }
+    p { color: var(--muted); font-size: 14px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="h-left">
+      <div class="logo-mark">Geo<em>Artemis</em></div>
+      <div class="logo-sep"></div>
+      <div class="logo-sub">Ocean Module<br><b>App 5</b></div>
+    </div>
+    <nav class="h-nav">
+      <a href="/app1/">App 1</a>
+      <a href="/app2/">App 2</a>
+      <a href="/app3/">App 3</a>
+      <a href="/app4/">App 4</a>
+      <a href="/app5/" class="active">App 5</a>
+    </nav>
+    <div class="h-right">
+      <a href="/app2/logout" class="nav-logout">Log out</a>
+    </div>
+  </header>
+
+  <main class="main-content">
     <h1>App 5 Home</h1>
     <p>This is the App 5 page.</p>
-      <nav>
-        <a href="/app1/">App 1</a> |
-        <a href="/app2/">App 2</a> |
-        <a href="/app3/">App 3</a> |
-        <a href="/app4/">App 4</a> |
-         <a href="/app5/">App 5</a> |
-        <a href="/app2/logout">Log out</a>
-      </nav>
-  </body>
+  </main>
+</body>
 </html>

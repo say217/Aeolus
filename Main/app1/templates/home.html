@@ -1,19 +1,919 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>App1</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aeolus — Ocean Subsurface Temperature Prediction</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        /* ============================================
+   Aeolus — design tokens
+   Palette grounded in ocean depth: near-black
+   abyssal base, teal for surface current/wind,
+   warm coral for temperature signal.
+   ============================================ */
+        :root {
+            --deep: #070f17;
+            --deep-2: #0c1c29;
+            --panel: #102434;
+            --panel-line: rgba(233, 241, 245, 0.09);
+            --ink: #eaf1f4;
+            --ink-dim: #8fa4b0;
+            --ink-dimmer: #5f7480;
+            --teal: #5fcdb8;
+            --teal-dim: #3a7d72;
+            --coral: #ff8a5b;
+            --coral-dim: #a85c3f;
+
+            --serif: 'Fraunces', Georgia, serif;
+            --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --mono: 'IBM Plex Mono', ui-monospace, monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--deep);
+            color: var(--ink);
+            font-family: var(--sans);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        /* subtle film-grain / noise overlay for depth of field */
+        .grain {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0.035;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+            mix-blend-mode: overlay;
+        }
+
+        ::selection {
+            background: var(--teal-dim);
+            color: var(--ink);
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--teal);
+            outline-offset: 3px;
+        }
+
+        /* ============ NAV ============ */
+        .topnav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(7, 15, 23, 0.45);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            transition: background 0.3s ease;
+        }
+
+        .topnav-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 18px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .brand {
+            font-family: var(--serif);
+            font-size: 1.25rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .nav-links a {
+            font-size: 0.9rem;
+            color: var(--ink-dim);
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--ink);
+        }
+
+        .nav-cta {
+            border: 1px solid var(--panel-line);
+            padding: 8px 16px;
+            border-radius: 3px;
+            color: var(--ink) !important;
+        }
+
+        .nav-cta:hover {
+            border-color: var(--teal-dim);
+        }
+
+        /* ============ HERO VIDEO & SECTION ============ */
+        .hero-wrapper {
+            position: relative;
+            width: 100%;
+            min-height: 100vh;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: 80px;
+        }
+
+        .hero-video-bg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .hero-video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            filter: brightness(0.85) contrast(1.08);
+        }
+
+        .hero-video-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                180deg,
+                rgba(7, 15, 23, 0.35) 0%,
+                rgba(7, 15, 23, 0.65) 70%,
+                rgba(7, 15, 23, 1) 100%
+            );
+        }
+
+        /* ============ CLASSIC PAGE LOADER ============ */
+        #page-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background: #070f17;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        #page-loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .loader-spinner {
+            width: 42px;
+            height: 42px;
+            border: 2.5px solid rgba(233, 241, 245, 0.1);
+            border-top-color: var(--teal);
+            border-radius: 50%;
+            animation: classicSpin 0.8s linear infinite;
+        }
+
+        .loader-text {
+            font-family: var(--serif);
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--ink);
+            letter-spacing: 0.08em;
+        }
+
+        @keyframes classicSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hero {
+            position: relative;
+            z-index: 2;
+            background: transparent !important;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 110px 32px 130px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .hero-text {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .kicker {
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: var(--teal);
+            margin-bottom: 22px;
+        }
+
+        .hero-text h1 {
+            font-family: var(--serif);
+            font-weight: 500;
+            font-size: clamp(2.6rem, 5.2vw, 4.2rem);
+            line-height: 1.1;
+            letter-spacing: -0.01em;
+            max-width: 16ch;
+            margin: 0 auto;
+        }
+
+        .hero-sub {
+            margin-top: 26px;
+            font-size: 1.12rem;
+            line-height: 1.65;
+            color: var(--ink-dim);
+            max-width: 54ch;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-actions {
+            margin-top: 38px;
+            display: flex;
+            gap: 18px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .profile-line {
+            stroke-dasharray: 900;
+            stroke-dashoffset: 900;
+            animation: drawLine 1.6s ease-out forwards;
+        }
+
+        .profile-dot {
+            opacity: 0;
+            animation: fadeInDot 0.5s ease-out forwards;
+        }
+
+        @keyframes drawLine {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        @keyframes fadeInDot {
+            to {
+                opacity: 1;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .profile-line {
+                animation: none;
+                stroke-dashoffset: 0;
+            }
+
+            .profile-dot {
+                animation: none;
+                opacity: 1;
+            }
+        }
+
+        /* ============ INTRO STRIP ============ */
+        .intro {
+            border-top: 1px solid var(--panel-line);
+            border-bottom: 1px solid var(--panel-line);
+            background: var(--deep-2);
+        }
+
+        .intro p {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 56px 32px;
+            font-family: var(--serif);
+            font-size: 1.35rem;
+            line-height: 1.55;
+            font-weight: 400;
+            color: #cfdde3;
+            text-align: center;
+        }
+
+        /* ============ SECTIONS (shared) ============ */
+        .section {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 100px 32px;
+        }
+
+        .section-head {
+            display: flex;
+            align-items: baseline;
+            gap: 18px;
+            margin-bottom: 48px;
+            border-bottom: 1px solid var(--panel-line);
+            padding-bottom: 20px;
+        }
+
+        .section-num {
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: var(--ink-dimmer);
+            white-space: nowrap;
+        }
+
+        .section-head h2 {
+            font-family: var(--serif);
+            font-weight: 500;
+            font-size: clamp(1.5rem, 2.6vw, 2.05rem);
+            letter-spacing: -0.005em;
+        }
+
+        /* ============ DATA SECTION ============ */
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 28px;
+        }
+
+        .data-card {
+            background: var(--panel);
+            border: 1px solid var(--panel-line);
+            border-radius: 4px;
+            padding: 32px;
+        }
+
+        .data-card h3 {
+            font-family: var(--serif);
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 6px;
+        }
+
+        .res-tag {
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            color: var(--teal);
+            margin-bottom: 22px;
+        }
+
+        .var-list {
+            list-style: none;
+        }
+
+        .var-list li {
+            display: flex;
+            align-items: baseline;
+            gap: 14px;
+            padding: 10px 0;
+            border-top: 1px solid var(--panel-line);
+            font-size: 0.92rem;
+        }
+
+        .var-list li:first-child {
+            border-top: none;
+        }
+
+        .var-list code {
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            color: var(--coral);
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 108px;
+        }
+
+        .var-list span {
+            color: var(--ink-dim);
+        }
+
+        .data-note {
+            margin-top: 20px;
+            font-size: 0.88rem;
+            color: var(--ink-dimmer);
+            line-height: 1.6;
+            border-top: 1px solid var(--panel-line);
+            padding-top: 18px;
+        }
+
+        .depth-strip {
+            margin-top: 44px;
+        }
+
+        .depth-strip-label {
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            color: var(--ink-dimmer);
+            margin-bottom: 16px;
+        }
+
+        .depth-ticks {
+            display: flex;
+            border: 1px solid var(--panel-line);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .depth-tick {
+            flex: 1;
+            padding: 14px 4px;
+            text-align: center;
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            color: var(--ink);
+            border-right: 1px solid var(--panel-line);
+        }
+
+        .depth-tick:last-child {
+            border-right: none;
+        }
+
+        /* ============ PIPELINE ============ */
+        .pipeline-list {
+            list-style: none;
+        }
+
+        .pipeline-list li {
+            display: grid;
+            grid-template-columns: 64px 1fr;
+            gap: 28px;
+            padding: 34px 0;
+            border-top: 1px solid var(--panel-line);
+        }
+
+        .pipeline-list li:last-child {
+            border-bottom: 1px solid var(--panel-line);
+        }
+
+        .pipeline-index {
+            font-family: var(--serif);
+            font-size: 2.1rem;
+            font-weight: 400;
+            color: var(--teal-dim);
+            line-height: 1;
+        }
+
+        .pipeline-body h3 {
+            font-family: var(--serif);
+            font-weight: 500;
+            font-size: 1.22rem;
+            margin-bottom: 10px;
+        }
+
+        .pipeline-body p {
+            color: var(--ink-dim);
+            max-width: 62ch;
+            font-size: 0.98rem;
+            line-height: 1.65;
+        }
+
+        /* ============ OUTPUT ============ */
+        .output-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .output-card {
+            padding: 28px 0 0;
+            border-top: 2px solid var(--coral-dim);
+        }
+
+        .output-card h3 {
+            font-family: var(--serif);
+            font-weight: 500;
+            font-size: 1.1rem;
+            margin-bottom: 12px;
+        }
+
+        .output-card p {
+            color: var(--ink-dim);
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        /* ============ STACK ============ */
+        .stack-section {
+            padding-top: 0;
+            padding-bottom: 80px;
+        }
+
+        .stack-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .stack-row span {
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            color: var(--ink-dim);
+            border: 1px solid var(--panel-line);
+            padding: 8px 14px;
+            border-radius: 999px;
+        }
+
+        /* ============ FOOTER ============ */
+        .footer {
+            border-top: 1px solid var(--panel-line);
+            background: var(--deep-2);
+        }
+
+        .footer-inner {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 40px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .footer-inner p {
+            font-size: 0.88rem;
+            color: var(--ink-dimmer);
+        }
+
+        .footer-inner a {
+            color: var(--ink-dim);
+            border-bottom: 1px solid var(--panel-line);
+        }
+
+        .footer-inner a:hover {
+            color: var(--teal);
+        }
+
+        /* ============ RESPONSIVE ============ */
+        @media (max-width: 880px) {
+            .hero {
+                grid-template-columns: 1fr;
+                padding-top: 56px;
+            }
+
+            .hero-profile {
+                order: -1;
+                max-width: 260px;
+                margin: 0 auto 20px;
+            }
+
+            .nav-links {
+                gap: 18px;
+            }
+
+            .nav-links a:not(.nav-cta) {
+                display: none;
+            }
+
+            .data-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .output-grid {
+                grid-template-columns: 1fr;
+                gap: 40px;
+            }
+
+            .pipeline-list li {
+                grid-template-columns: 40px 1fr;
+            }
+
+            .depth-ticks {
+                flex-wrap: wrap;
+            }
+
+            .depth-tick {
+                flex: 1 1 20%;
+                border-bottom: 1px solid var(--panel-line);
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            html {
+                scroll-behavior: auto;
+            }
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Welcome to App1 Landing page</h1>
-    <nav>
-        <a href="/app1/">App 1</a> |
-        <a href="/app2/">App 2</a> |
-        <a href="/app3/">App 3</a> |
-        <a href="/app4/">App 4</a> |
-        <a href="/app2/logout">Log out</a>
-    </nav>
-</body>
 
-</html>
+    <!-- ============ CLASSIC PAGE LOADER ============ -->
+    <div id="page-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Aeolus</div>
+    </div>
+
+    <div class="grain"></div>
+
+    <nav class="topnav">
+        <div class="topnav-inner">
+            <span class="brand">Æolus</span>
+            <div class="nav-links">
+                <a href="#data">Data</a>
+                <a href="#pipeline">Pipeline</a>
+                <a href="#output">Output</a>
+                <a href="https://github.com/say217/Aeolus" class="nav-cta" target="_blank" rel="noopener">View
+                    source</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ============ HERO ============ -->
+    <div class="hero-wrapper">
+        <div class="hero-video-bg">
+            <video autoplay loop muted playsinline class="hero-video">
+                <source src="/assets/8733055-uhd_3840_2160_30fps.mp4" type="video/mp4">
+                <source src="/.assets/8733055-uhd_3840_2160_30fps.mp4" type="video/mp4">
+            </video>
+            <div class="hero-video-overlay"></div>
+        </div>
+
+        <header class="hero">
+            <div class="hero-text">
+                <p class="kicker">Deep learning · ocean physics</p>
+                <h1>Predicting the ocean<br>you cannot see.</h1>
+                <p class="hero-sub">
+                    Aeolus infers subsurface seawater temperature down to 1,000&nbsp;m,
+                    trained only on what satellites can observe at the surface —
+                    sea height, salinity, currents, and scatterometer winds.
+                </p>
+                <div class="hero-actions">
+                    <a href="https://github.com/say217/Aeolus" class="btn-primary" target="_blank" rel="noopener">Explore
+                        the repository</a>
+                    <a href="#pipeline" class="btn-ghost">See how it works</a>
+                </div>
+            </div>
+        </header>
+    </div>
+
+    <!-- ============ INTRO STRIP ============ -->
+    <section class="intro">
+        <p>
+            Named for the Greek keeper of the winds, Aeolus reads the surface signature
+            the atmosphere leaves on the ocean and reconstructs the temperature structure
+            hidden beneath it — a Residual Attention U-Net trained on reanalysis and
+            scatterometer data, evaluated depth by depth.
+        </p>
+    </section>
+
+    <!-- ============ DATA ============ -->
+    <section id="data" class="section data-section">
+        <div class="section-head">
+            <span class="section-num">Inputs</span>
+            <h2>Two instruments, one ocean</h2>
+        </div>
+
+        <div class="data-grid">
+            <div class="data-card">
+                <h3>Ocean physics reanalysis</h3>
+                <p class="res-tag">0.083° resolution</p>
+                <ul class="var-list">
+                    <li><code>thetao</code><span>Sea water potential temperature</span></li>
+                    <li><code>so</code><span>Sea water salinity</span></li>
+                    <li><code>uo</code> / <code>vo</code><span>Eastward &amp; northward surface currents</span></li>
+                    <li><code>zos</code><span>Sea surface height</span></li>
+                    <li><code>mlotst</code><span>Mixed layer thickness</span></li>
+                    <li><code>bottomT</code><span>Sea floor potential temperature</span></li>
+                </ul>
+            </div>
+
+            <div class="data-card">
+                <h3>Scatterometer wind observations</h3>
+                <p class="res-tag">0.25° / 20 km resolution</p>
+                <ul class="var-list">
+                    <li><code>eastward_wind</code><span>10 m stress-equivalent wind, U component</span></li>
+                    <li><code>northward_wind</code><span>10 m stress-equivalent wind, V component</span></li>
+                </ul>
+                <p class="data-note">
+                    Wind stress at the surface drives mixing and upwelling — the model
+                    learns to read that signal as a proxy for what's happening below.
+                </p>
+            </div>
+        </div>
+
+        <div class="depth-strip">
+            <p class="depth-strip-label">Predicted across 15 standard depth levels (m)</p>
+            <div class="depth-ticks" id="depthTicks"></div>
+        </div>
+    </section>
+
+    <!-- ============ PIPELINE ============ -->
+    <section id="pipeline" class="section pipeline-section">
+        <div class="section-head">
+            <span class="section-num">Pipeline</span>
+            <h2>From surface signal to depth profile</h2>
+        </div>
+
+        <ol class="pipeline-list">
+            <li>
+                <div class="pipeline-index">1</div>
+                <div class="pipeline-body">
+                    <h3>Align &amp; preprocess</h3>
+                    <p>Resample the two grids onto a common frame, add normalized
+                        latitude/longitude channels (CoordConv) so the network stays
+                        location-aware, and mask out land before anything touches the loss.</p>
+                </div>
+            </li>
+            <li>
+                <div class="pipeline-index">2</div>
+                <div class="pipeline-body">
+                    <h3>Residual Attention U-Net</h3>
+                    <p>Channel and spatial attention (CBAM) inside every convolutional
+                        block sharpen the geospatial patterns that matter. A depth-residual
+                        head predicts each deeper layer as an offset from sea surface temperature,
+                        rather than from scratch.</p>
+                </div>
+            </li>
+            <li>
+                <div class="pipeline-index">3</div>
+                <div class="pipeline-body">
+                    <h3>Depth-weighted training</h3>
+                    <p>A masked loss reweights shallow versus deep water, where variance
+                        behaves very differently, alongside gradient clipping and
+                        best-checkpoint saving.</p>
+                </div>
+            </li>
+            <li>
+                <div class="pipeline-index">4</div>
+                <div class="pipeline-body">
+                    <h3>Evaluate &amp; export</h3>
+                    <p>Per-depth RMSE, MAE and R² scores, rendered as horizontal slices,
+                        vertical temperature-depth profiles, and 3D ocean cuboids —
+                        then written out as NetCDF.</p>
+                </div>
+            </li>
+        </ol>
+    </section>
+
+    <!-- ============ OUTPUT ============ -->
+    <section id="output" class="section output-section">
+        <div class="section-head">
+            <span class="section-num">Output</span>
+            <h2>What comes out the other end</h2>
+        </div>
+
+        <div class="output-grid">
+            <div class="output-card">
+                <h3>Skill metrics</h3>
+                <p>RMSE, MAE and R² computed independently at each of the 15 depth levels,
+                    so accuracy near the surface is never mistaken for accuracy at 1,000 m.</p>
+            </div>
+            <div class="output-card">
+                <h3>Visualizations</h3>
+                <p>2D horizontal slices at fixed depth, vertical temperature-vs-depth
+                    profiles, and full 3D ocean cuboid renders for spatial context.</p>
+            </div>
+            <div class="output-card">
+                <h3>NetCDF export</h3>
+                <p>Formatted, depth-indexed predictions saved in the format oceanographers
+                    already work with — ready to drop into existing tooling.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ============ STACK ============ -->
+    <section class="section stack-section">
+        <div class="section-head">
+            <span class="section-num">Built with</span>
+        </div>
+        <div class="stack-row">
+            <span>Python 3.10</span>
+            <span>FastAPI</span>
+            <span>PyTorch U-Net</span>
+            <span>Xarray</span>
+            <span>NetCDF</span>
+            <span>Plotly</span>
+            <span>NumPy</span>
+            <span>Docker</span>
+            <span>Git LFS</span>
+        </div>
+    </section>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <span class="brand">Æolus</span>
+            <p>MIT licensed · <a href="https://github.com/say217/Aeolus" target="_blank"
+                    rel="noopener">github.com/say217/Aeolus</a></p>
+        </div>
+    </footer>
+
+    <script>
+        // Standard depth levels the model predicts across (from Aeolus README)
+        const DEPTHS = [0, 5, 10, 20, 30, 50, 75, 100, 125, 150, 200, 300, 500, 700, 1000];
+
+        // Illustrative thermocline-shaped temperature curve (°C) — warm surface,
+        // sharp drop through the thermocline, slow cooling toward 1000 m.
+        const TEMPS = [27, 26.7, 26.2, 25, 23.4, 19.6, 15.2, 12.1, 10.3, 9.1, 7.6, 6.2, 5.1, 4.6, 4.1];
+
+        /* ---------- populate the depth tick strip ---------- */
+        function buildDepthTicks() {
+            const el = document.getElementById('depthTicks');
+            if (!el) return;
+            el.innerHTML = DEPTHS.map(d => `<div class="depth-tick">${d}</div>`).join('');
+        }
+
+        /* ---------- draw the hero depth/temperature profile ---------- */
+        function buildDepthProfile() {
+            const svg = document.getElementById('depthSvg');
+            if (!svg) return;
+
+            const W = 360, H = 520;
+            const padTop = 30, padBottom = 40, padLeft = 20, padRight = 90;
+            const plotH = H - padTop - padBottom;
+            const plotW = W - padLeft - padRight;
+
+            const minT = Math.min(...TEMPS), maxT = Math.max(...TEMPS);
+            const n = DEPTHS.length;
+
+            const yFor = i => padTop + (i / (n - 1)) * plotH;
+            const xFor = t => padLeft + ((t - minT) / (maxT - minT)) * plotW;
+
+            // colour interpolation: coral (warm, shallow) -> teal (cool, deep)
+            const coral = [255, 138, 91];
+            const teal = [95, 205, 184];
+            const colorFor = i => {
+                const f = i / (n - 1);
+                const r = Math.round(coral[0] + (teal[0] - coral[0]) * f);
+                const g = Math.round(coral[1] + (teal[1] - coral[1]) * f);
+                const b = Math.round(coral[2] + (teal[2] - coral[2]) * f);
+                return `rgb(${r},${g},${b})`;
+            };
+
+            let svgContent = '';
+
+            // faint vertical guide
+            svgContent += `<line x1="${padLeft}" y1="${padTop}" x2="${padLeft}" y2="${H - padBottom}" stroke="rgba(233,241,245,0.08)" stroke-width="1"/>`;
+
+            // the profile line
+            const points = DEPTHS.map((d, i) => `${xFor(TEMPS[i])},${yFor(i)}`).join(' ');
+            svgContent += `<polyline points="${points}" fill="none" stroke="url(#profileGrad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="profile-line"/>`;
+
+            // gradient def
+            svgContent = `<defs>
+      <linearGradient id="profileGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="rgb(255,138,91)"/>
+        <stop offset="100%" stop-color="rgb(95,205,184)"/>
+      </linearGradient>
+    </defs>` + svgContent;
+
+            // dots + labels per depth level
+            DEPTHS.forEach((d, i) => {
+                const x = xFor(TEMPS[i]);
+                const y = yFor(i);
+                const c = colorFor(i);
+                svgContent += `<circle cx="${x}" cy="${y}" r="3.4" fill="${c}" class="profile-dot" style="animation-delay:${i * 45}ms"/>`;
+                svgContent += `<text x="${W - padRight + 14}" y="${y + 3}" font-family="IBM Plex Mono, monospace" font-size="10" fill="rgba(143,164,176,0.85)">${d}m</text>`;
+            });
+
+            svg.innerHTML = svgContent;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            buildDepthTicks();
+            buildDepthProfile();
+        });
+
+        // Hide classic page loader after page loads
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('page-loader');
+            if (loader) {
+                setTimeout(() => {
+                    loader.classList.add('hidden');
+                }, 350);
+            }
+        });
+    </script>
+</body>

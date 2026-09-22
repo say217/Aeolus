@@ -16,8 +16,15 @@ try:
 except ImportError:
     pass
 
+from fastapi.staticfiles import StaticFiles
+
 app = FastAPI()
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "change-me"))
+
+# Mount assets directory for background videos and media
+if os.path.exists(".assets"):
+    app.mount("/assets", StaticFiles(directory=".assets"), name="assets")
+    app.mount("/.assets", StaticFiles(directory=".assets"), name="dot_assets")
 
 # Include routers
 app.include_router(app1_router, prefix="/app1")

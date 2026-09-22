@@ -81,11 +81,11 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      padding: 0 26px;
-      background: rgba(8, 11, 14, 0.72);
-      border-bottom: 1px solid var(--border-soft);
-      backdrop-filter: blur(16px);
+      padding: 0 24px;
+      background: rgba(8, 11, 16, 0.82);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(20px) saturate(160%);
+      -webkit-backdrop-filter: blur(20px) saturate(160%);
     }
 
     .h-left {
@@ -97,8 +97,11 @@
     .logo-mark {
       font-family: var(--ff-display);
       font-weight: 600;
-      font-size: 19px;
+      font-size: 18.5px;
+      letter-spacing: -0.2px;
       color: var(--ink);
+      display: flex;
+      align-items: baseline;
     }
 
     .logo-mark em {
@@ -109,15 +112,16 @@
 
     .logo-sep {
       width: 1px;
-      height: 24px;
-      background: var(--border);
-      margin: 0 6px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 0 4px;
     }
 
     .logo-sub {
       font-size: 11px;
       color: var(--muted);
-      line-height: 1.45;
+      line-height: 1.35;
+      font-weight: 400;
     }
 
     .logo-sub b {
@@ -128,41 +132,62 @@
     .h-nav {
       display: flex;
       align-items: center;
-      gap: 2px;
-      font-size: 12.5px;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
 
     .h-nav a {
+      font-size: 12.5px;
+      font-weight: 500;
       color: var(--muted);
       text-decoration: none;
-      padding: 7px 12px;
+      padding: 6px 14px;
       border-radius: 7px;
-      transition: color .15s;
+      transition: all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .h-nav a:hover {
       color: var(--ink);
-    }
-
-    .h-nav .sep {
-      color: var(--dim);
+      background: rgba(255, 255, 255, 0.06);
     }
 
     .h-nav a.active {
-      color: var(--ink);
+      color: #ffffff;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.09);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .h-nav a.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0px;
+      left: 10px;
+      right: 10px;
+      height: 2px;
+      background: var(--sea);
+      border-radius: 2px;
     }
 
     .h-right {
       display: flex;
       align-items: center;
       gap: 14px;
+      justify-content: flex-end;
     }
 
     .status-pill {
       display: flex;
       align-items: center;
       gap: 7px;
-      padding: 6px 13px;
+      padding: 5px 12px;
       border-radius: 20px;
       background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border-soft);
@@ -176,19 +201,31 @@
       height: 6px;
       border-radius: 50%;
       background: var(--sea);
+      box-shadow: 0 0 6px rgba(95, 167, 156, 0.5);
       animation: breathe 2.4s ease-in-out infinite;
     }
 
     @keyframes breathe {
+      0%, 100% { opacity: 1; }
+      50% { opacity: .35; }
+    }
 
-      0%,
-      100% {
-        opacity: 1
-      }
+    .nav-logout {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      text-decoration: none;
+      padding: 5px 12px;
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 200ms ease;
+    }
 
-      50% {
-        opacity: .35
-      }
+    .nav-logout:hover {
+      color: #ff9999;
+      background: rgba(255, 80, 80, 0.1);
+      border-color: rgba(255, 80, 80, 0.25);
     }
 
     /* ═══════════ DASHBOARD GRID ═══════════ */
@@ -391,17 +428,17 @@
       <div class="logo-sub">Subsurface prediction dashboard<br><b>App 4</b></div>
     </div>
     <nav class="h-nav">
-      <a href="/app1/">App 1</a><span class="sep">|</span>
-      <a href="/app2/">App 2</a><span class="sep">|</span>
-      <a href="/app3/">App 3</a><span class="sep">|</span>
-      <a href="/app4/" class="active">App 4</a><span class="sep">|</span>
-      <a href="/app5/">App 5</a><span class="sep">|</span>
-      <a href="/app2/logout">Log out</a>
+      <a href="/app1/">App 1</a>
+      <a href="/app2/">App 2</a>
+      <a href="/app3/">App 3</a>
+      <a href="/app4/" class="active">App 4</a>
+      <a href="/app5/">App 5</a>
     </nav>
     <div class="h-right">
       <div class="status-pill">
         <div class="status-dot"></div><span>Model output live</span>
       </div>
+      <a href="/app2/logout" class="nav-logout">Log out</a>
     </div>
   </header>
 

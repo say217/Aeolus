@@ -59,47 +59,72 @@ body::before{
 /* ═══════════ HEADER ═══════════ */
 header{
   position:fixed;top:0;left:0;right:0;height:var(--header-h);z-index:1000;
-  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;
-  padding:0 26px;
-  background:rgba(8,11,14,0.72);
-  border-bottom:1px solid var(--border-soft);
-  backdrop-filter:blur(16px);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;
+  background:rgba(8,11,16,0.82);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  backdrop-filter:blur(20px) saturate(160%);
+  -webkit-backdrop-filter:blur(20px) saturate(160%);
 }
 
 .h-left{display:flex;align-items:center;gap:14px;}
 .logo-mark{
-  font-family:var(--ff-display);font-weight:600;font-size:19px;letter-spacing:0.2px;
+  font-family:var(--ff-display);font-weight:600;font-size:18.5px;letter-spacing:-0.2px;
   color:var(--ink);display:flex;align-items:baseline;
 }
 .logo-mark em{font-style:italic;font-weight:500;color:var(--sea);}
-.logo-sep{width:1px;height:24px;background:var(--border);margin:0 6px;}
-.logo-sub{font-size:11px;color:var(--muted);line-height:1.45;font-weight:400;}
+.logo-sep{width:1px;height:22px;background:rgba(255,255,255,0.1);margin:0 4px;}
+.logo-sub{font-size:11px;color:var(--muted);line-height:1.35;font-weight:400;}
 .logo-sub b{color:var(--ink);font-weight:500;}
 
-.h-center{display:flex;align-items:center;gap:4px;}
-.nav-item{
-  font-size:12.5px;color:var(--muted);text-decoration:none;padding:8px 16px;
-  border-radius:7px;transition:color .18s ease;position:relative;font-weight:500;
+.h-center{
+  display:flex;align-items:center;gap:4px;
+  background:rgba(255,255,255,0.03);
+  padding:4px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,0.06);
 }
-.nav-item:hover{color:var(--ink);}
-.nav-item.active{color:var(--ink);}
+.nav-item{
+  font-size:12.5px;color:var(--muted);text-decoration:none;padding:6px 14px;
+  border-radius:7px;transition:all 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  position:relative;font-weight:500;display:flex;align-items:center;justify-content:center;
+}
+.nav-item:hover{
+  color:var(--ink);
+  background:rgba(255,255,255,0.06);
+}
+.nav-item.active{
+  color:#ffffff;
+  font-weight:600;
+  background:rgba(255,255,255,0.09);
+  box-shadow:0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
+}
 .nav-item.active::after{
-  content:'';position:absolute;left:16px;right:16px;bottom:2px;height:2px;
-  background:var(--brass);border-radius:2px;
+  content:'';position:absolute;bottom:0px;left:10px;right:10px;height:2px;
+  background:var(--sea);border-radius:2px;
 }
 
 .h-right{display:flex;align-items:center;gap:14px;justify-content:flex-end;}
 .clock-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:1px;padding-right:14px;border-right:1px solid var(--border-soft);}
-.clock-utc{font-size:14px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;}
+.clock-utc{font-size:13px;font-weight:500;color:var(--ink);font-variant-numeric:tabular-nums;letter-spacing:0.2px;}
 .clock-label{font-size:10px;color:var(--muted);}
 .status-pill{
-  display:flex;align-items:center;gap:7px;padding:6px 13px;border-radius:20px;
+  display:flex;align-items:center;gap:7px;padding:5px 12px;border-radius:20px;
   background:rgba(255,255,255,0.03);border:1px solid var(--border-soft);
   font-size:11px;color:var(--muted);font-weight:500;
 }
-.status-dot{width:6px;height:6px;border-radius:50%;background:var(--sea);animation:breathe 2.4s ease-in-out infinite;}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--sea);box-shadow:0 0 6px rgba(95,167,156,0.5);animation:breathe 2.4s ease-in-out infinite;}
 .status-dot.busy{background:var(--brass);animation-duration:.9s;}
 @keyframes breathe{0%,100%{opacity:1}50%{opacity:.35}}
+
+.nav-logout{
+  font-size:12px;font-weight:500;color:var(--muted);text-decoration:none;
+  padding:5px 12px;border-radius:7px;background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.08);transition:all 200ms ease;
+}
+.nav-logout:hover{
+  color:#ff9999;background:rgba(255,80,80,0.1);border-color:rgba(255,80,80,0.25);
+}
 
 /* ═══════════ GLOBE ═══════════ */
 #globe-container{position:absolute;top:0;left:0;right:0;bottom:0;z-index:1;}
@@ -243,17 +268,13 @@ header{
     <div class="logo-mark">Geo<em>Artemis</em></div>
     <div class="logo-sep"></div>
     <div class="logo-sub">Ocean physics intelligence<br><b>GLORYS12V1</b> reanalysis</div>
-          <nav>
-        <a href="/app1/">App 1</a> |
-        <a href="/app2/">App 2</a> |
-        <a href="/app3/">App 3</a> |
-        <a href="/app4/">App 4</a> |
-         <a href="/app5/">App 5</a> |
-        <a href="/app2/logout">Log out</a>
-      </nav>
   </div>
   <nav class="h-center">
-    <a href="#" class="nav-item active">Globe</a>
+    <a href="/app1/" class="nav-item">App 1</a>
+    <a href="/app2/" class="nav-item">App 2</a>
+    <a href="/app3/" class="nav-item active">App 3</a>
+    <a href="/app4/" class="nav-item">App 4</a>
+    <a href="/app5/" class="nav-item">App 5</a>
   </nav>
   <div class="h-right">
     <div class="clock-wrap">
@@ -261,6 +282,7 @@ header{
       <div class="clock-label">Kolkata time</div>
     </div>
     <div class="status-pill"><div class="status-dot" id="status-dot"></div><span id="status-text">Live</span></div>
+    <a href="/app2/logout" class="nav-logout">Log out</a>
   </div>
 </header>
 
